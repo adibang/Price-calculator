@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Keuntungan</title>
+    <!-- Memuat Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Menggunakan font Inter sebagai default */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styling untuk input number agar tidak menampilkan panah spinner */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-md mx-4 bg-white rounded-2xl shadow-xl p-6 sm:p-8">
+        
+        <!-- Judul -->
+        <h1 class="text-2xl sm:text-3xl font-bold text-center text-blue-600 mb-6">
+            Kalkulator Keuntungan
+        </h1>
+
+        <!-- Tombol Toggle Mode -->
+        <div class="flex bg-blue-50 rounded-lg p-1 mb-6">
+            <button id="toggleProfit" class="flex-1 py-2 px-4 rounded-md text-blue-600 font-semibold bg-white shadow-sm transition-all">
+                Hitung Keuntungan
+            </button>
+            <button id="toggleSellPrice" class="flex-1 py-2 px-4 rounded-md text-gray-600 font-medium transition-all">
+                Hitung Harga Jual
+            </button>
+        </div>
+
+        <!-- Konten Form (Dinamis) -->
+        <div id="formContainer">
+
+            <!-- Mode 1: Hitung Persentase Keuntungan -->
+            <form id="formProfit" class="space-y-4">
+                <div>
+                    <label for="costPrice1" class="block text-sm font-medium text-gray-700 mb-1">Harga Beli (Modal)</label>
+                    <input type="number" id="costPrice1" placeholder="Contoh: 100000" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg">
+                </div>
+                <div>
+                    <label for="sellPrice1" class="block text-sm font-medium text-gray-700 mb-1">Harga Jual</label>
+                    <input type="number" id="sellPrice1" placeholder="Contoh: 120000" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg">
+                </div>
+                <button type="submit" id="calculateProfitBtn" class="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-all shadow-md active:scale-[0.98]">
+                    Hitung
+                </button>
+            </form>
+
+            <!-- Mode 2: Hitung Harga Jual -->
+            <form id="formSellPrice" class="space-y-4 hidden">
+                <div>
+                    <label for="costPrice2" class="block text-sm font-medium text-gray-700 mb-1">Harga Beli (Modal)</label>
+                    <input type="number" id="costPrice2" placeholder="Contoh: 100000" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg">
+                </div>
+                <div>
+                    <label for="profitPercent2" class="block text-sm font-medium text-gray-700 mb-1">Persen Keuntungan (%)</label>
+                    <input type="number" id="profitPercent2" placeholder="Contoh: 20" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg">
+                </div>
+                <button type="submit" id="calculateSellPriceBtn" class="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-all shadow-md active:scale-[0.98]">
+                    Hitung
+                </button>
+            </form>
+
+        </div>
+
+        <!-- Kontainer Hasil -->
+        <div id="resultsContainer" class="border-t mt-8 pt-6 opacity-0 transition-opacity duration-500 hidden">
+            <h2 class="text-lg font-semibold mb-4 text-gray-800">Hasil Perhitungan</h2>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Harga Beli -->
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="text-sm text-blue-800 font-medium">Harga Beli</div>
+                    <div id="resultCost" class="text-xl font-bold text-blue-900 break-words">Rp 0</div>
+                </div>
+                <!-- Harga Jual -->
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="text-sm text-blue-800 font-medium">Harga Jual</div>
+                    <div id="resultSell" class="text-xl font-bold text-blue-900 break-words">Rp 0</div>
+                </div>
+                <!-- Keuntungan (Rp) -->
+                <div class="bg-gray-100 p-4 rounded-lg">
+                    <div class="text-sm text-gray-700 font-medium">Keuntungan (Rp)</div>
+                    <div id="resultProfitAmount" class="text-2xl font-bold text-green-600 break-words">Rp 0</div>
+                </div>
+                <!-- Keuntungan (%) -->
+                <div class="bg-gray-100 p-4 rounded-lg">
+                    <div class="text-sm text-gray-700 font-medium">Keuntungan (%)</div>
+                    <div id="resultProfitPercent" class="text-2xl font-bold text-green-600 break-words">0%</div>
+                </div>
+            </div>
+
+            <!-- Catatan Kaki -->
+            <p class="text-xs text-gray-500 text-center mt-6">
+                *Perhitungan berdasarkan persentase dari harga beli.
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Elemen UI
+            const toggleProfitBtn = document.getElementById('toggleProfit');
+            const toggleSellPriceBtn = document.getElementById('toggleSellPrice');
+            
+            const formProfit = document.getElementById('formProfit');
+            const formSellPrice = document.getElementById('formSellPrice');
+            
+            const calculateProfitBtn = document.getElementById('calculateProfitBtn');
+            const calculateSellPriceBtn = document.getElementById('calculateSellPriceBtn');
+
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            // Elemen Hasil
+            const resultCost = document.getElementById('resultCost');
+            const resultSell = document.getElementById('resultSell');
+            const resultProfitAmount = document.getElementById('resultProfitAmount');
+            const resultProfitPercent = document.getElementById('resultProfitPercent');
+
+            // Fungsi untuk format mata uang IDR
+            function formatCurrency(number) {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(number);
+            }
+
+            // Fungsi untuk beralih mode
+            function switchMode(mode) {
+                // Sembunyikan hasil saat berganti mode
+                resultsContainer.classList.add('opacity-0', 'hidden');
+
+                if (mode === 'profit') {
+                    // Atur tampilan tombol toggle
+                    toggleProfitBtn.className = 'flex-1 py-2 px-4 rounded-md text-blue-600 font-semibold bg-white shadow-sm transition-all';
+                    toggleSellPriceBtn.className = 'flex-1 py-2 px-4 rounded-md text-gray-600 font-medium transition-all';
+                    
+                    // Tampilkan form yang sesuai
+                    formProfit.classList.remove('hidden');
+                    formSellPrice.classList.add('hidden');
+                } else if (mode === 'sellPrice') {
+                    // Atur tampilan tombol toggle
+                    toggleSellPriceBtn.className = 'flex-1 py-2 px-4 rounded-md text-blue-600 font-semibold bg-white shadow-sm transition-all';
+                    toggleProfitBtn.className = 'flex-1 py-2 px-4 rounded-md text-gray-600 font-medium transition-all';
+                    
+                    // Tampilkan form yang sesuai
+                    formSellPrice.classList.remove('hidden');
+                    formProfit.classList.add('hidden');
+                }
+            }
+
+            // Fungsi untuk menampilkan hasil
+            function displayResults(cost, sell, amount, percent) {
+                // Isi nilai hasil
+                resultCost.textContent = formatCurrency(cost);
+                resultSell.textContent = formatCurrency(sell);
+                resultProfitAmount.textContent = formatCurrency(amount);
+                resultProfitPercent.textContent = `${percent.toFixed(2)} %`;
+
+                // Atur warna berdasarkan untung atau rugi
+                const isLoss = amount < 0;
+                const profitColor = isLoss ? 'text-red-600' : 'text-green-600';
+                const profitClass = `text-2xl font-bold break-words ${profitColor}`;
+                
+                resultProfitAmount.className = profitClass;
+                resultProfitPercent.className = profitClass;
+
+                // Tampilkan kontainer hasil dengan animasi fade-in
+                resultsContainer.classList.remove('hidden');
+                // Sedikit delay agar transisi CSS berjalan setelah 'hidden' dihapus
+                setTimeout(() => {
+                    resultsContainer.classList.remove('opacity-0');
+                }, 10);
+            }
+
+            // Event Listener untuk Toggle
+            toggleProfitBtn.addEventListener('click', () => switchMode('profit'));
+            toggleSellPriceBtn.addEventListener('click', () => switchMode('sellPrice'));
+
+            // Event Listener untuk Form 1 (Hitung Keuntungan)
+            formProfit.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const cost = parseFloat(document.getElementById('costPrice1').value);
+                const sell = parseFloat(document.getElementById('sellPrice1').value);
+
+                if (isNaN(cost) || isNaN(sell) || cost <= 0) {
+                    alert('Harap masukkan harga beli dan harga jual yang valid.');
+                    return;
+                }
+
+                const profitAmount = sell - cost;
+                const profitPercent = (profitAmount / cost) * 100;
+
+                displayResults(cost, sell, profitAmount, profitPercent);
+            });
+
+            // Event Listener untuk Form 2 (Hitung Harga Jual)
+            formSellPrice.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const cost = parseFloat(document.getElementById('costPrice2').value);
+                const percent = parseFloat(document.getElementById('profitPercent2').value);
+
+                if (isNaN(cost) || isNaN(percent) || cost <= 0) {
+                    alert('Harap masukkan harga beli dan persen keuntungan yang valid.');
+                    return;
+                }
+
+                const sellPrice = cost * (1 + percent / 100);
+                const profitAmount = sellPrice - cost;
+
+                displayResults(cost, sellPrice, profitAmount, percent);
+            });
+
+            // Inisialisasi mode awal
+            switchMode('profit');
+        });
+    </script>
+
+</body>
+</html>
