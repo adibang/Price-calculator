@@ -21,6 +21,13 @@
         input[type=number] {
             -moz-appearance: textfield;
         }
+        /* Animasi toggle */
+        .toggle-option {
+            transition: all 0.3s ease;
+        }
+        .toggle-active {
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
@@ -31,6 +38,42 @@
         <h1 class="text-2xl sm:text-3xl font-bold text-center text-blue-600 mb-6">
             Kalkulator Keuntungan
         </h1>
+
+        <!-- Toggle Mode Perhitungan -->
+        <div class="mb-8">
+            <h2 class="text-sm font-medium text-gray-700 mb-3">Metode Perhitungan Keuntungan:</h2>
+            <div class="flex items-center justify-center space-x-4">
+                <div class="relative">
+                    <input type="radio" id="costBased" name="calculationMethod" value="cost" class="sr-only" checked>
+                    <label for="costBased" class="toggle-label flex items-center cursor-pointer">
+                        <div class="toggle-option bg-blue-50 border-2 border-blue-200 rounded-xl px-4 py-3 flex items-center space-x-2 hover:bg-blue-100 transition-all">
+                            <div class="w-5 h-5 rounded-full border-2 border-blue-500 flex items-center justify-center">
+                                <div class="w-3 h-3 rounded-full bg-blue-500 toggle-dot"></div>
+                            </div>
+                            <span class="font-medium text-blue-700">Dari Harga Beli</span>
+                        </div>
+                    </label>
+                </div>
+                
+                <div class="relative">
+                    <input type="radio" id="sellBased" name="calculationMethod" value="sell" class="sr-only">
+                    <label for="sellBased" class="toggle-label flex items-center cursor-pointer">
+                        <div class="toggle-option bg-green-50 border-2 border-green-200 rounded-xl px-4 py-3 flex items-center space-x-2 hover:bg-green-100 transition-all">
+                            <div class="w-5 h-5 rounded-full border-2 border-green-500 flex items-center justify-center">
+                                <div class="w-3 h-3 rounded-full bg-green-500 toggle-dot hidden"></div>
+                            </div>
+                            <span class="font-medium text-green-700">Dari Harga Jual</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Keterangan metode -->
+            <div id="methodDescription" class="mt-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <p class="font-medium text-blue-600 mb-1">Berdasarkan Harga Beli:</p>
+                <p>Keuntungan = (Harga Jual - Harga Beli) ÷ Harga Beli × 100%</p>
+            </div>
+        </div>
 
         <!-- Tombol Toggle Mode -->
         <div class="flex bg-blue-50 rounded-lg p-1 mb-6">
@@ -81,6 +124,14 @@
         <div id="resultsContainer" class="border-t mt-8 pt-6 opacity-0 transition-opacity duration-500 hidden">
             <h2 class="text-lg font-semibold mb-4 text-gray-800">Hasil Perhitungan</h2>
             
+            <!-- Indikator Metode -->
+            <div id="methodIndicator" class="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-blue-700">Metode:</span>
+                    <span id="currentMethod" class="text-sm font-bold text-blue-800">Dari Harga Beli</span>
+                </div>
+            </div>
+            
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <!-- Harga Beli -->
                 <div class="bg-blue-50 p-4 rounded-lg">
@@ -104,9 +155,14 @@
                 </div>
             </div>
 
+            <!-- Informasi tambahan berdasarkan metode -->
+            <div id="additionalInfo" class="mt-4 text-xs text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <p id="calculationInfo"></p>
+            </div>
+
             <!-- Catatan Kaki -->
             <p class="text-xs text-gray-500 text-center mt-6">
-                *Perhitungan berdasarkan persentase dari harga beli.
+                *Perhitungan berdasarkan persentase dari <span id="basedOnText">harga beli</span>.
             </p>
         </div>
 
@@ -126,11 +182,27 @@
 
             const resultsContainer = document.getElementById('resultsContainer');
             
+            // Toggle metode perhitungan
+            const costBasedRadio = document.getElementById('costBased');
+            const sellBasedRadio = document.getElementById('sellBased');
+            const methodDescription = document.getElementById('methodDescription');
+            const methodIndicator = document.getElementById('methodIndicator');
+            const currentMethod = document.getElementById('currentMethod');
+            const calculationInfo = document.getElementById('calculationInfo');
+            const basedOnText = document.getElementById('basedOnText');
+            
+            // Toggle labels
+            const costBasedLabel = document.querySelector('label[for="costBased"]');
+            const sellBasedLabel = document.querySelector('label[for="sellBased"]');
+            
             // Elemen Hasil
             const resultCost = document.getElementById('resultCost');
             const resultSell = document.getElementById('resultSell');
             const resultProfitAmount = document.getElementById('resultProfitAmount');
             const resultProfitPercent = document.getElementById('resultProfitPercent');
+
+            // Variabel untuk menyimpan metode perhitungan saat ini
+            let currentCalculationMethod = 'cost'; // 'cost' atau 'sell'
 
             // Fungsi untuk format mata uang IDR
             function formatCurrency(number) {
@@ -140,6 +212,66 @@
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 0
                 }).format(number);
+            }
+
+            // Fungsi untuk mengubah metode perhitungan
+            function switchCalculationMethod(method) {
+                currentCalculationMethod = method;
+                
+                if (method === 'cost') {
+                    // Update UI untuk metode berdasarkan harga beli
+                    costBasedLabel.querySelector('.toggle-option').classList.remove('bg-green-50', 'border-green-200');
+                    costBasedLabel.querySelector('.toggle-option').classList.add('bg-blue-50', 'border-blue-200');
+                    costBasedLabel.querySelector('.toggle-dot').classList.remove('hidden');
+                    costBasedLabel.querySelector('span').classList.remove('text-green-700');
+                    costBasedLabel.querySelector('span').classList.add('text-blue-700');
+                    
+                    sellBasedLabel.querySelector('.toggle-option').classList.remove('bg-blue-50', 'border-blue-200');
+                    sellBasedLabel.querySelector('.toggle-option').classList.add('bg-green-50', 'border-green-200');
+                    sellBasedLabel.querySelector('.toggle-dot').classList.add('hidden');
+                    sellBasedLabel.querySelector('span').classList.remove('text-blue-700');
+                    sellBasedLabel.querySelector('span').classList.add('text-green-700');
+                    
+                    // Update keterangan
+                    methodDescription.innerHTML = `
+                        <p class="font-medium text-blue-600 mb-1">Berdasarkan Harga Beli:</p>
+                        <p>Keuntungan = (Harga Jual - Harga Beli) ÷ Harga Beli × 100%</p>
+                    `;
+                    
+                    // Update indikator
+                    currentMethod.textContent = 'Dari Harga Beli';
+                    basedOnText.textContent = 'harga beli';
+                    
+                } else if (method === 'sell') {
+                    // Update UI untuk metode berdasarkan harga jual
+                    sellBasedLabel.querySelector('.toggle-option').classList.remove('bg-green-50', 'border-green-200');
+                    sellBasedLabel.querySelector('.toggle-option').classList.add('bg-blue-50', 'border-blue-200');
+                    sellBasedLabel.querySelector('.toggle-dot').classList.remove('hidden');
+                    sellBasedLabel.querySelector('span').classList.remove('text-green-700');
+                    sellBasedLabel.querySelector('span').classList.add('text-blue-700');
+                    
+                    costBasedLabel.querySelector('.toggle-option').classList.remove('bg-blue-50', 'border-blue-200');
+                    costBasedLabel.querySelector('.toggle-option').classList.add('bg-green-50', 'border-green-200');
+                    costBasedLabel.querySelector('.toggle-dot').classList.add('hidden');
+                    costBasedLabel.querySelector('span').classList.remove('text-blue-700');
+                    costBasedLabel.querySelector('span').classList.add('text-green-700');
+                    
+                    // Update keterangan
+                    methodDescription.innerHTML = `
+                        <p class="font-medium text-blue-600 mb-1">Berdasarkan Harga Jual:</p>
+                        <p>Keuntungan = (Harga Jual - Harga Beli) ÷ Harga Jual × 100%</p>
+                    `;
+                    
+                    // Update indikator
+                    currentMethod.textContent = 'Dari Harga Jual';
+                    basedOnText.textContent = 'harga jual';
+                }
+                
+                // Reset hasil jika sudah ada
+                if (!resultsContainer.classList.contains('hidden')) {
+                    // Coba hitung ulang dengan data yang ada
+                    recalculateWithCurrentData();
+                }
             }
 
             // Fungsi untuk beralih mode
@@ -166,6 +298,48 @@
                 }
             }
 
+            // Fungsi untuk menghitung keuntungan berdasarkan metode yang dipilih
+            function calculateProfit(cost, sell) {
+                const profitAmount = sell - cost;
+                let profitPercent;
+                
+                if (currentCalculationMethod === 'cost') {
+                    // Berdasarkan harga beli
+                    profitPercent = (profitAmount / cost) * 100;
+                } else {
+                    // Berdasarkan harga jual
+                    profitPercent = (profitAmount / sell) * 100;
+                }
+                
+                return { profitAmount, profitPercent };
+            }
+
+            // Fungsi untuk menghitung harga jual berdasarkan metode yang dipilih
+            function calculateSellPrice(cost, percent) {
+                let sellPrice;
+                
+                if (currentCalculationMethod === 'cost') {
+                    // Berdasarkan harga beli
+                    sellPrice = cost * (1 + percent / 100);
+                } else {
+                    // Berdasarkan harga jual: 
+                    // Jika X = harga jual, maka (X - cost) / X = percent/100
+                    // X - cost = (percent/100) * X
+                    // X - (percent/100) * X = cost
+                    // X * (1 - percent/100) = cost
+                    // X = cost / (1 - percent/100)
+                    if (percent >= 100) {
+                        alert('Persentase keuntungan harus kurang dari 100% untuk metode perhitungan berdasarkan harga jual.');
+                        return null;
+                    }
+                    sellPrice = cost / (1 - percent / 100);
+                }
+                
+                const profitAmount = sellPrice - cost;
+                
+                return { sellPrice, profitAmount };
+            }
+
             // Fungsi untuk menampilkan hasil
             function displayResults(cost, sell, amount, percent) {
                 // Isi nilai hasil
@@ -182,6 +356,13 @@
                 resultProfitAmount.className = profitClass;
                 resultProfitPercent.className = profitClass;
 
+                // Update informasi tambahan
+                if (currentCalculationMethod === 'cost') {
+                    calculationInfo.textContent = `Keuntungan ${percent.toFixed(2)}% dihitung dari harga beli (modal) sebesar ${formatCurrency(cost)}.`;
+                } else {
+                    calculationInfo.textContent = `Keuntungan ${percent.toFixed(2)}% dihitung dari harga jual sebesar ${formatCurrency(sell)}.`;
+                }
+
                 // Tampilkan kontainer hasil dengan animasi fade-in
                 resultsContainer.classList.remove('hidden');
                 // Sedikit delay agar transisi CSS berjalan setelah 'hidden' dihapus
@@ -190,7 +371,55 @@
                 }, 10);
             }
 
-            // Event Listener untuk Toggle
+            // Fungsi untuk menghitung ulang dengan data yang ada
+            function recalculateWithCurrentData() {
+                // Cek mode mana yang aktif
+                const isProfitMode = !formProfit.classList.contains('hidden');
+                
+                if (isProfitMode) {
+                    // Mode hitung keuntungan
+                    const cost = parseFloat(document.getElementById('costPrice1').value);
+                    const sell = parseFloat(document.getElementById('sellPrice1').value);
+                    
+                    if (isNaN(cost) || isNaN(sell) || cost <= 0 || sell <= 0) {
+                        return;
+                    }
+                    
+                    const { profitAmount, profitPercent } = calculateProfit(cost, sell);
+                    displayResults(cost, sell, profitAmount, profitPercent);
+                } else {
+                    // Mode hitung harga jual
+                    const cost = parseFloat(document.getElementById('costPrice2').value);
+                    const percent = parseFloat(document.getElementById('profitPercent2').value);
+                    
+                    if (isNaN(cost) || isNaN(percent) || cost <= 0) {
+                        return;
+                    }
+                    
+                    const result = calculateSellPrice(cost, percent);
+                    if (result) {
+                        const { sellPrice, profitAmount } = result;
+                        displayResults(cost, sellPrice, profitAmount, percent);
+                    }
+                }
+            }
+
+            // Event Listener untuk Toggle Metode
+            costBasedRadio.addEventListener('change', () => switchCalculationMethod('cost'));
+            sellBasedRadio.addEventListener('change', () => switchCalculationMethod('sell'));
+            
+            // Event Listener untuk label toggle (agar bisa diklik di mana saja)
+            costBasedLabel.addEventListener('click', () => {
+                costBasedRadio.checked = true;
+                switchCalculationMethod('cost');
+            });
+            
+            sellBasedLabel.addEventListener('click', () => {
+                sellBasedRadio.checked = true;
+                switchCalculationMethod('sell');
+            });
+
+            // Event Listener untuk Toggle Mode
             toggleProfitBtn.addEventListener('click', () => switchMode('profit'));
             toggleSellPriceBtn.addEventListener('click', () => switchMode('sellPrice'));
 
@@ -201,14 +430,12 @@
                 const cost = parseFloat(document.getElementById('costPrice1').value);
                 const sell = parseFloat(document.getElementById('sellPrice1').value);
 
-                if (isNaN(cost) || isNaN(sell) || cost <= 0) {
+                if (isNaN(cost) || isNaN(sell) || cost <= 0 || sell <= 0) {
                     alert('Harap masukkan harga beli dan harga jual yang valid.');
                     return;
                 }
 
-                const profitAmount = sell - cost;
-                const profitPercent = (profitAmount / cost) * 100;
-
+                const { profitAmount, profitPercent } = calculateProfit(cost, sell);
                 displayResults(cost, sell, profitAmount, profitPercent);
             });
 
@@ -224,14 +451,22 @@
                     return;
                 }
 
-                const sellPrice = cost * (1 + percent / 100);
-                const profitAmount = sellPrice - cost;
+                // Validasi khusus untuk metode berdasarkan harga jual
+                if (currentCalculationMethod === 'sell' && percent >= 100) {
+                    alert('Persentase keuntungan harus kurang dari 100% untuk metode perhitungan berdasarkan harga jual.');
+                    return;
+                }
 
-                displayResults(cost, sellPrice, profitAmount, percent);
+                const result = calculateSellPrice(cost, percent);
+                if (result) {
+                    const { sellPrice, profitAmount } = result;
+                    displayResults(cost, sellPrice, profitAmount, percent);
+                }
             });
 
-            // Inisialisasi mode awal
+            // Inisialisasi
             switchMode('profit');
+            switchCalculationMethod('cost');
         });
     </script>
 
